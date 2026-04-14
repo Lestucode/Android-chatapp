@@ -22,9 +22,11 @@ import java.io.File;
 import okhttp3.MultipartBody;
 import org.json.JSONObject;
 
+import com.example.chatapp.AppConfig;
+
 public class HttpClient {
 
-    public static final String BASE_URL = "http://82.157.200.53:5050/api";
+    public static final String BASE_URL = AppConfig.HTTP_BASE_URL;
     private static final String TAG = "HttpClient";
     private static final OkHttpClient client = new OkHttpClient.Builder()
             .addInterceptor(new Interceptor() {

@@ -61,7 +61,7 @@ public class UserSearchAdapter extends RecyclerView.Adapter<UserSearchAdapter.Us
 
         // 加载头像
         if (user.getContactId() != null && !user.getContactId().isEmpty()) {
-            String avatarUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + user.getContactId() + "&showCover=true";
+            String avatarUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + user.getContactId() + "&showCover=true";
             GlideUrl glideUrl = new GlideUrl(avatarUrl, new LazyHeaders.Builder()
                     .addHeader("token", jwt)
                     .build());

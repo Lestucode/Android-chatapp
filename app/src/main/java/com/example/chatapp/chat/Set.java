@@ -112,7 +112,7 @@ public class Set extends AppCompatActivity {
                         if (signature != null) etSignature.setText(signature.toString());
 
                         // 加载头像
-                        String avatarUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + user.getUserId() + "&showCover=true";
+                        String avatarUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + user.getUserId() + "&showCover=true";
                         
                         // 后端的 downloadFile 接口加了 @GlobalInterceptor，必须携带 token 请求头
                         GlideUrl glideUrl = new GlideUrl(avatarUrl, new LazyHeaders.Builder()

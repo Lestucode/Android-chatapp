@@ -175,7 +175,7 @@ public class ChatHomePage extends AppCompatActivity {
                         // 加载头像
                         if (imageView != null) {
                             // 增加随机参数 ?t=... 破坏 Glide 的本地缓存，强制加载新头像
-                            String avatarUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + user.getUserId() + "&showCover=true&t=" + System.currentTimeMillis();
+                            String avatarUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + user.getUserId() + "&showCover=true&t=" + System.currentTimeMillis();
                             GlideUrl glideUrl = new GlideUrl(avatarUrl, new LazyHeaders.Builder()
                                     .addHeader("token", user.getToken())
                                     .build());

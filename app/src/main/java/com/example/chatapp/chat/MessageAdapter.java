@@ -103,7 +103,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             tvFileSize = otherHolder.tvFileSize;
             
             // 加载对方头像
-            String avatarUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + msg.getSendUserId() + "&showCover=false";
+            String avatarUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getSendUserId() + "&showCover=false";
             if (token != null && !token.isEmpty()) {
                 GlideUrl glideUrl = new GlideUrl(avatarUrl, new LazyHeaders.Builder().addHeader("token", token).build());
                 Glide.with(context)
@@ -147,7 +147,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                     // 优先使用本地路径
                     mediaUrl = msg.getMessageContent();
                 } else if (msg.getMessageId() != null && msg.getStatus() != null && msg.getStatus() == 1) {
-                    mediaUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + msg.getMessageId() + "&showCover=true";
+                    mediaUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getMessageId() + "&showCover=true";
                 }
                 
                 if (!mediaUrl.isEmpty()) {
@@ -194,7 +194,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                     fileUrl = msg.getMessageContent();
                     uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", new File(fileUrl));
                 } else if (msg.getMessageId() != null && msg.getStatus() != null && msg.getStatus() == 1) {
-                    fileUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + msg.getMessageId() + "&showCover=false";
+                    fileUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getMessageId() + "&showCover=false";
                     uri = Uri.parse(fileUrl);
                 }
                 if (uri != null) {
@@ -211,7 +211,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                     android.widget.Toast.makeText(context, "文件已在本地: " + msg.getMessageContent(), android.widget.Toast.LENGTH_SHORT).show();
                     return true;
                 } else if (msg.getMessageId() != null && msg.getStatus() != null && msg.getStatus() == 1) {
-                    fileUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + msg.getMessageId() + "&showCover=false";
+                    fileUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getMessageId() + "&showCover=false";
                 }
                 
                 if (!fileUrl.isEmpty()) {

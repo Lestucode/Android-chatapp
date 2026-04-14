@@ -77,7 +77,7 @@ public class WebSocketManager {
             }
 
             // 构建WebSocket连接地址，包含token
-            String wsUrl = "ws://82.157.200.53:5051/ws?token=" + token;
+            String wsUrl = AppConfig.WS_BASE_URL + "?token=" + token;
             client = new WebSocketClient(new URI(wsUrl)) {
                 @Override
                 public void onOpen(ServerHandshake handshakedata) {

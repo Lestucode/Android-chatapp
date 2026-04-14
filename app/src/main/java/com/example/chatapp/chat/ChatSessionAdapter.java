@@ -87,7 +87,7 @@ public class ChatSessionAdapter extends ListAdapter<ChatSessionEntity, ChatSessi
         }
 
         // 加载头像
-        String avatarUrl = "http://82.157.200.53:5050/api/chat/downloadFile?fileId=" + item.getContactId() + "&showCover=false";
+        String avatarUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + item.getContactId() + "&showCover=false";
         if (token != null && !token.isEmpty()) {
             GlideUrl glideUrl = new GlideUrl(avatarUrl, new LazyHeaders.Builder().addHeader("token", token).build());
             Glide.with(context)
