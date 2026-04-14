@@ -1,0 +1,68 @@
+<androidx.drawerlayout.widget.DrawerLayout
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- 主内容 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fitsSystemWindows="true">
+
+            <com.google.android.material.appbar.MaterialToolbar
+                android:id="@+id/home_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:title="ChatApp"
+                android:navigationIcon="@drawable/dinosaur"/>
+            <com.google.android.material.search.SearchBar
+                android:id="@+id/home_search"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:hint="你想查什么呢？"/>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/friends_recycler_view"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="match_parent"-->
+<!--                android:padding="8dp"-->
+<!--                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />-->
+
+            <FrameLayout
+                android:id="@+id/fragment_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_navigation_view" 
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:menu="@menu/navbutton_menu"
+            app:labelVisibilityMode="labeled"
+            />
+    </LinearLayout>
+
+    <!-- 抽屉导航 -->
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/home_navView"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/menu_drawer"
+        app:itemTextAppearanceActiveBoldEnabled="true"/>
+</androidx.drawerlayout.widget.DrawerLayout>

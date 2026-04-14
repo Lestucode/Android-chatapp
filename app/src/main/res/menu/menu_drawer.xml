@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/main_item"
+        android:title="功能栏">
+        <menu>
+            <item
+                android:id="@+id/addFriend_item"
+                android:title="添加好友/群"
+                android:checkable="true"
+                app:showAsAction="ifRoom"/>
+            <item
+                android:id="@+id/friendApply_item"
+                android:title="好友申请"
+                android:checkable="true"
+                app:showAsAction="ifRoom"/>
+            <item
+                android:id="@+id/set_item"
+                android:title="设置"
+                android:checkable="true"
+                app:showAsAction="ifRoom"/>
+            <item
+                android:id="@+id/createGroup_item"
+                android:title="创建群聊"
+                android:checkable="true"
+                app:showAsAction="ifRoom"/>
+
+
+        </menu>
+    </item>
+
+</menu>

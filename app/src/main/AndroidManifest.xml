@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+<!--    <uses-permission android:name="android.permission.INTERNET"/>-->
+    <!-- 允许程序振动，用于本地通知设置振动 -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- 访问网络权限 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 麦克风权限，用于语音消息时录制语音，不使用录制语音可以移�?-->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 相机权限，用于图片消息时拍摄图片，不使用拍照可以移除 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- 获取运营商信息，用于获取网络状�?-->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- 获取读存储权限，用于附件等的获取 -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- 访问 GPS 定位，用于定位消息，如果不用定位相关可以移除 -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- 允许程序在手机屏幕关闭后后台进程仍然运行 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- 申请闹钟定时权限，SDK 心跳中使用，3.9.8及以后版本可以不添加 -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 允许前台服务权限，用于保�?WebSocket 稳定连接 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".MyApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ChatApp"
+        tools:targetApi="31"
+        android:networkSecurityConfig="@xml/network_security_config"
+        >
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+        <activity android:name=".MainActivity"
+            android:exported="true"/>
+        <activity android:name=".Register"
+            android:exported="true"/>
+
+        <activity android:name=".chat.ChatHomePage"
+            android:exported="true"/>
+        <activity android:name=".chat.AddFriend"
+            android:exported="true"/>
+        <activity android:name=".chat.Set"
+            android:exported="true"/>
+        <activity android:name=".chat.NewFriend"/>
+        <activity android:name=".chat.GroupCreat"
+            android:exported="false" />
+        <activity android:name=".chat.UserInfoActivity"
+            android:exported="false" />
+        <activity android:name=".chat.GroupInfoActivity"
+            android:exported="false" />
+        <activity android:name=".chat.GroupMemberListActivity"
+            android:exported="false" />
+        <activity android:name=".chat.InviteFriendActivity"
+            android:exported="false" />
+        <activity android:name=".chat.ChatActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"/>
+        <activity android:name=".chat.MediaPreviewActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar"/>
+
+        <!-- WebSocket 后台保活服务 -->
+        <service
+            android:name=".WebSocketService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+    </application>
+
+</manifest>

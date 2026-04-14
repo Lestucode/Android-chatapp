@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ChatApp</string>
+    <string name="open_drawer">打开了抽屉</string>
+    <string name="close_drawer">关闭了抽屉</string>
+</resources>

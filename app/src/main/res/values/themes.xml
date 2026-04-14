@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ChatApp" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 可以在这里配置主题的各种属性 -->
+        <item name="colorPrimary">@color/system_accent3_0</item>
+        <item name="colorPrimaryVariant">@color/system_accent3_10</item>
+        <item name="colorOnPrimary">@color/system_accent3_200</item>
+        
+        <!-- 其他主题属性 -->
+    </style>
+
+    <style name="ThemeOverlay.App.TextInputLayout" parent="">
+        <item name="colorPrimary">@color/system_accent3_200</item>
+    </style>
+
+    <style name="Widget.App.Button.AddFriend"
+        parent="Widget.Material3.Button.TextButton">
+            <item name="android:textColor">@color/system_accent3_200</item>
+            <item name="android:textSize">14sp</item>
+    </style>
+    <!-- styles.xml -->
+    <style name="ThemeOverlay.MyApp.MaterialAlertDialog.Centered.Custom" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="materialAlertDialogTheme">@style/MyApp.MaterialAlertDialog.Custom</item>
+    </style>
+
+    <style name="MyApp.MaterialAlertDialog.Custom">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.MyApp.MaterialAlertDialog.Custom</item>
+        <item name="android:textAlignment">center</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="ShapeAppearance.MyApp.MaterialAlertDialog.Custom" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="MyApp.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="materialAlertDialogTheme">@style/MyApp.MaterialAlertDialog.Custom</item>
+    </style>
+
+
+
+
+
+</resources>

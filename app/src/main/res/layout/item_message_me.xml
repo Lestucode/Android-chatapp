@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="end"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="64dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp"
+        app:cardBackgroundColor="#95EC69"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:textColor="#333333"
+                android:textSize="16sp" />
+
+            <!-- Media (Image/Video) Layout -->
+            <FrameLayout
+                android:id="@+id/flMedia"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+                <ImageView
+                    android:id="@+id/ivMedia"
+                    android:layout_width="160dp"
+                    android:layout_height="200dp"
+                    android:scaleType="centerCrop" />
+                <ImageView
+                    android:id="@+id/ivPlay"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_media_play"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- File Layout -->
+            <LinearLayout
+                android:id="@+id/llFile"
+                android:layout_width="200dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:background="#95EC69"
+                android:gravity="center_vertical"
+                android:visibility="gone">
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    app:tint="#333333" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/tvFileName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#333333"
+                        android:textSize="14sp"
+                        android:maxLines="2"
+                        android:ellipsize="end" />
+                    <TextView
+                        android:id="@+id/tvFileSize"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="#666666"
+                        android:textSize="12sp"
+                        android:layout_marginTop="4dp" />
+                </LinearLayout>
+            </LinearLayout>
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

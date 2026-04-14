@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="email"
+        android:theme="@style/ThemeOverlay.App.TextInputLayout"
+        android:layout_marginTop="100dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/register_email"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="昵称"
+        android:theme="@style/ThemeOverlay.App.TextInputLayout"
+        android:layout_marginTop="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/register_nickname"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_marginTop="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.App.TextInputLayout"
+        android:hint="密码">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/register_password1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"/>
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_marginTop="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.App.TextInputLayout"
+        android:hint="再次输入密码密码">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/register_password2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textPassword"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- 验证码区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical">
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:theme="@style/ThemeOverlay.App.TextInputLayout"
+            android:hint="验证码">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/register_check_code"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <ImageView
+            android:id="@+id/register_check_code_image"
+            android:layout_width="120dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:background="#EEEEEE"
+            android:scaleType="fitCenter"/>
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/register_button"
+        android:layout_margin="18dp"
+        style="?arrowHeadLength"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="注册" />
+</LinearLayout>

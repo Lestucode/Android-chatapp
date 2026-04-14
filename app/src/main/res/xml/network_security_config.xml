@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- 允许特定域名的 HTTP 明文请求（推荐，只放开你服务器的 IP，更安全） -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">82.157.200.53</domain> <!-- 你的服务器 IP -->
+    </domain-config>
+
+    <!-- （可选，测试用）允许所有域名的 HTTP 请求（生产环境不推荐）
+    <base-config cleartextTrafficPermitted="true" />
+    -->
+</network-security-config>

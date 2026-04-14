@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="4dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutlineVariant">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:background="@color/system_accent3_200"
+        >
+
+        <!-- Friend Avatar -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/friend_img"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/dinosaur"
+            app:shapeAppearanceOverlay="@style/CircleImageView"
+            app:strokeColor="?attr/colorOutline"
+            app:strokeWidth="1dp"/>
+
+        <!-- Middle Content Area -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Friend Name -->
+            <TextView
+                android:id="@+id/friend_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Zhang San"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="@color/system_accent3_900" />
+
+            <!-- Last Message -->
+            <TextView
+                android:id="@+id/friend_last_msg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Are we going to the movies today?"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="@color/system_accent3_600"
+                android:ellipsize="end"
+                android:maxLines="1"/>
+        </LinearLayout>
+
+        <!-- Right Side: Time and Unread Badge -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="end|center_vertical"
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <!-- Time Text -->
+            <TextView
+                android:id="@+id/friend_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="15:30"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOnSurfaceVariant"/>
+
+            <!-- Unread Messages Badge -->
+            <TextView
+                android:id="@+id/unread_badge_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/badge_background_oval"
+                android:textAppearance="?attr/textAppearanceLabelSmall"
+                android:textColor="?attr/colorOnError"
+                android:paddingHorizontal="6dp"
+                android:gravity="center"
+                tools:text="3"
+                android:visibility="visible"/> <!-- Set to 'gone' or 'visible' programmatically -->
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
