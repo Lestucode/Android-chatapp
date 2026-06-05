@@ -19,6 +19,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.bumptech.glide.Glide;
@@ -68,13 +70,8 @@ public class ChatHomePage extends AppCompatActivity {
         initView();
         setupOnBackPressed();
 
-        // 初始加载 ChatFragment
-        if (savedInstanceState == null) {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragment_container, new ChatFragment())
-                    .commit();
-        }
+        // 初始显示由 bottom_navigation 默认选中 action_page_1 触发
+        // 因此无需在这里重复添加 Fragment
     }
 
     private void initView() {
@@ -116,6 +113,8 @@ public class ChatHomePage extends AppCompatActivity {
                 startActivity(new Intent(ChatHomePage.this, NewFriend.class));
             } else if(itemId == R.id.createGroup_item) {
                 startActivity(new Intent(ChatHomePage.this, GroupCreat.class));
+            } else if(itemId == R.id.changePassword_item) {
+                startActivity(new Intent(ChatHomePage.this, ChangePasswordActivity.class));
             } else {
                 return false;
             }
@@ -123,27 +122,37 @@ public class ChatHomePage extends AppCompatActivity {
             return true;
         });
 
-        // BottomNavigation 切换 Fragment
+        // BottomNavigation 切换 Fragment（使用 hide/show 避免重建）
         bottomNavigationView.setOnItemSelectedListener(item -> {
-            Fragment selectedFragment = null;
             int itemId = item.getItemId();
+            FragmentManager fm = getSupportFragmentManager();
+            FragmentTransaction transaction = fm.beginTransaction();
+            String tag;
+            if (itemId == R.id.action_page_1) tag = "ChatFragment";
+            else if (itemId == R.id.action_page_2) tag = "ContactFragment";
+            else if (itemId == R.id.action_page_3) tag = "MomentsFragment";
+            else return true;
 
-            if (itemId == R.id.action_page_1) {
-                selectedFragment = new ChatFragment();
-            } else if (itemId == R.id.action_page_2) {
-                selectedFragment = new ContactFragment();
-            } else if (itemId == R.id.action_page_3) {
-                selectedFragment = new MomentsFragment();
+            // 隐藏当前所有 Fragment
+            Fragment current = fm.getPrimaryNavigationFragment();
+            if (current != null) {
+                transaction.hide(current);
             }
 
-            if (selectedFragment != null) {
-                getSupportFragmentManager()
-                        .beginTransaction()
-                        .replace(R.id.fragment_container, selectedFragment)
-                        .commit();
-                return true;
+            // 查找或创建目标 Fragment
+            Fragment target = fm.findFragmentByTag(tag);
+            if (target == null) {
+                if ("ChatFragment".equals(tag)) target = new ChatFragment();
+                else if ("ContactFragment".equals(tag)) target = new ContactFragment();
+                else target = new MomentsFragment();
+                transaction.add(R.id.fragment_container, target, tag);
+            } else {
+                transaction.show(target);
             }
-            return false;
+
+            transaction.setPrimaryNavigationFragment(target);
+            transaction.commit();
+            return true;
         });
 
         // 设置默认选中项

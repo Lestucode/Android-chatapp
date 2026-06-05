@@ -37,6 +37,7 @@ import androidx.media3.datasource.DefaultHttpDataSource;
 import androidx.media3.datasource.DefaultDataSource;
 import androidx.media3.ui.PlayerView;
 
+@androidx.media3.common.util.UnstableApi
 public class MediaPreviewActivity extends AppCompatActivity {
 
     private PhotoView photoView;
@@ -46,46 +47,6 @@ public class MediaPreviewActivity extends AppCompatActivity {
     private String mediaType; // "image" or "video"
     private String fileName;
     private String token;
-    private long downloadId = -1;
-
-    private final BroadcastReceiver downloadReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
-            if (id == downloadId) {
-                DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-                DownloadManager.Query query = new DownloadManager.Query();
-                query.setFilterById(id);
-                try (Cursor cursor = dm.query(query)) {
-                    if (cursor != null && cursor.moveToFirst()) {
-                        int statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
-                        int uriIndex = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
-                        if (statusIndex >= 0) {
-                            int status = cursor.getInt(statusIndex);
-                            if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                                Toast.makeText(MediaPreviewActivity.this, "下载完成", Toast.LENGTH_SHORT).show();
-                                Log.i("MediaPreviewActivity", "Download successful: " + fileName);
-                                
-                                if (uriIndex >= 0) {
-                                    String localUri = cursor.getString(uriIndex);
-                                    if (localUri != null) {
-                                        // 扫描文件以便在相册中显示
-                                        Uri fileUri = Uri.parse(localUri);
-                                        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, fileUri));
-                                    }
-                                }
-                            } else if (status == DownloadManager.STATUS_FAILED) {
-                                int reasonIndex = cursor.getColumnIndex(DownloadManager.COLUMN_REASON);
-                                int reason = reasonIndex >= 0 ? cursor.getInt(reasonIndex) : -1;
-                                Toast.makeText(MediaPreviewActivity.this, "下载失败，错误码：" + reason, Toast.LENGTH_SHORT).show();
-                                Log.e("MediaPreviewActivity", "Download failed, reason: " + reason);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -114,12 +75,6 @@ public class MediaPreviewActivity extends AppCompatActivity {
         photoView = findViewById(R.id.photoView);
         playerView = findViewById(R.id.playerView);
         findViewById(R.id.btnClose).setOnClickListener(v -> finish());
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(downloadReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
-        }
 
         if ("image".equals(mediaType)) {
             photoView.setVisibility(View.VISIBLE);
@@ -191,18 +146,7 @@ public class MediaPreviewActivity extends AppCompatActivity {
             }
         }
 
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(mediaUrl));
-        request.addRequestHeader("token", token);
-        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-        request.setTitle("下载媒体文件");
-
-        DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-        if (dm != null) {
-            Log.i("MediaPreviewActivity", "Starting download: " + mediaUrl);
-            downloadId = dm.enqueue(request);
-            Toast.makeText(this, "开始下载...", Toast.LENGTH_SHORT).show();
-        }
+        com.example.chatapp.util.ChatFileDownloader.download(this, mediaUrl, fileName, token, null);
     }
 
     @Override
@@ -224,11 +168,6 @@ public class MediaPreviewActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        try {
-            unregisterReceiver(downloadReceiver);
-        } catch (IllegalArgumentException e) {
-            Log.e("MediaPreviewActivity", "Receiver not registered", e);
-        }
         if (player != null) {
             player.release();
             player = null;

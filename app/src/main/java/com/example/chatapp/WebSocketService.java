@@ -4,8 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -62,6 +64,19 @@ public class WebSocketService extends Service {
     private static final int MAX_RECONNECT_DELAY = 30000; // 最大重连延迟（30秒）
     private boolean isManualStop = false; // 是否手动停止服务（避免手动停止后重连）
 
+    // 屏幕亮起监听：息屏后再亮屏时立即触发重连
+    private BroadcastReceiver screenOnReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!isManualStop && !webSocketManager.isConnected()) {
+                Log.d(TAG, "屏幕亮起，触发立即重连");
+                reconnectDelay = 0; // 重置延迟，立即重连
+                mainHandler.removeCallbacks(reconnectRunnable);
+                scheduleReconnect();
+            }
+        }
+    };
+
     private Runnable reconnectRunnable = new Runnable() {
         @Override
         public void run() {
@@ -104,6 +119,7 @@ public class WebSocketService extends Service {
         startForeground(NOTIFICATION_ID, createNotification()); // 启动为前台服务，避免被系统回收
 
         registerNetworkCallback();
+        registerScreenOnReceiver();
     }
 
     private void registerNetworkCallback() {
@@ -140,6 +156,14 @@ public class WebSocketService extends Service {
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .build();
         connectivityManager.registerNetworkCallback(request, networkCallback);
+    }
+
+    // 注册屏幕亮起广播监听
+    private void registerScreenOnReceiver() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
+        registerReceiver(screenOnReceiver, filter);
     }
 
     @Override
@@ -194,9 +218,11 @@ public class WebSocketService extends Service {
         return new WebSocketManager.WebSocketListener() {
             @Override
             public void onOpen() {
+                Log.d("DBG-MISS-MSG", "WebSocket onOpen - connection established/reestablished");
                 // 切换到主线程发送广播
                 mainHandler.post(() -> {
                     Log.d(TAG, "WebSocket 连接成功");
+                    Log.d("DBG-MISS-MSG", "WebSocket onOpen post to mainHandler");
                     // 连接成功：重置重连延迟，发送连接成功广播
                     reconnectDelay = 3000;
                     sendStatusBroadcast("连接成功");
@@ -212,6 +238,7 @@ public class WebSocketService extends Service {
 
             @Override
             public void onMessage(String message) {
+                Log.d("DBG-MISS-MSG", "raw message arrived: " + (message.length() > 100 ? message.substring(0, 100) + "..." : message));
                 persistIncomingPayload(message);
                 // 切换到主线程发送消息广播，避免 UI 崩溃
                 mainHandler.post(() -> {
@@ -219,6 +246,7 @@ public class WebSocketService extends Service {
                     try {
                         MessageSendDto<?> base = gson.fromJson(message, MessageSendDto.class);
                         if (base != null && base.getMessageType() != null) {
+                            Log.d("DBG-MISS-MSG", "broadcasting msgType=" + base.getMessageType() + " messageId=" + base.getMessageId());
                             if (base.getMessageType() == 7) {
                                 isManualStop = true;
                                 webSocketManager.close();
@@ -293,6 +321,7 @@ public class WebSocketService extends Service {
                 MessageSendDto<?> base = gson.fromJson(payload, MessageSendDto.class);
                 if (base == null || base.getMessageType() == null) return;
                 int mt = base.getMessageType();
+                Log.d("DBG-MISS-MSG", "persistIncomingPayload processing msgType=" + mt + " messageId=" + base.getMessageId() + " content=" + (base.getMessageContent() != null ? base.getMessageContent().substring(0, Math.min(30, base.getMessageContent().length())) : "null"));
                 if (mt == 0) {
                     Type t = new TypeToken<MessageSendDto<WsInitData>>() {
                     }.getType();
@@ -345,17 +374,23 @@ public class WebSocketService extends Service {
         });
     }
 
+    // #region debug-point persist-init
     private void persistInitData(WsInitData data) {
         AppDatabase db = AppDatabase.getInstance(this);
 
         List<WsInitData.ChatSessionUser> sessionList = data.getChatSessionList();
+        Log.d("DBG-MISS-INIT", "persistInitData | sessionCount=" + (sessionList != null ? sessionList.size() : 0));
         if (sessionList != null && !sessionList.isEmpty()) {
             List<ChatSessionEntity> sessionEntities = new ArrayList<>();
             for (WsInitData.ChatSessionUser session : sessionList) {
                 ChatSessionEntity entity = new ChatSessionEntity();
                 entity.setSessionId(session.getSessionId());
                 entity.setContactId(session.getContactId());
-                Integer contactType = ChatSessionIdUtils.getContactTypeById(session.getContactId());
+                // 优先使用服务端返回的 contactType，更可靠
+                Integer contactType = session.getContactType();
+                if (contactType == null) {
+                    contactType = ChatSessionIdUtils.getContactTypeById(session.getContactId());
+                }
                 if (contactType != null) {
                     entity.setContactType(contactType);
                 }
@@ -364,16 +399,19 @@ public class WebSocketService extends Service {
                 entity.setLastReceiveTime(session.getLastReceiveTime());
                 entity.setMemberCount(session.getMemberCount() != null ? session.getMemberCount() : 0);
                 sessionEntities.add(entity);
+                Log.d("DBG-MISS-INIT", "session | id=" + session.getSessionId() + " | lastMsg=" + session.getLastMessage() + " | lastTime=" + session.getLastReceiveTime());
             }
             db.chatSessionDao().insertOrReplaceList(sessionEntities);
         }
 
         List<WsInitData.ChatMessageDto> messageList = data.getChatMessageList();
+        Log.d("DBG-MISS-INIT", "persistInitData | messageCount=" + (messageList != null ? messageList.size() : 0));
         if (messageList != null && !messageList.isEmpty()) {
             List<ChatMessageEntity> messageEntities = new ArrayList<>();
             for (WsInitData.ChatMessageDto msg : messageList) {
                 Long messageId = msg.getMessageId();
                 if (messageId != null && db.chatMessageDao().getMessageByRemoteId(messageId) != null) {
+                    Log.d("DBG-MISS-INIT", "SKIP duplicate in INIT | messageId=" + messageId + " | sessionId=" + msg.getSessionId());
                     continue;
                 }
                 ChatMessageEntity entity = new ChatMessageEntity();
@@ -395,20 +433,61 @@ public class WebSocketService extends Service {
                 entity.setFileType(msg.getFileType());
                 entity.setStatus(msg.getStatus() != null ? msg.getStatus() : 1);
                 messageEntities.add(entity);
+                Log.d("DBG-MISS-INIT", "ADD msg | messageId=" + messageId + " | sessionId=" + msg.getSessionId() + " | sendTime=" + msg.getSendTime() + " | content=" + msg.getMessageContent());
             }
             if (!messageEntities.isEmpty()) {
+                Log.d("DBG-MISS-INIT", "insertOrReplaceList | count=" + messageEntities.size());
                 db.chatMessageDao().insertOrReplaceList(messageEntities);
+            } else {
+                Log.d("DBG-MISS-INIT", "all messages in INIT were duplicates, nothing to insert");
+            }
+        } else if (sessionList != null && !sessionList.isEmpty()) {
+            // FIX: INIT没有返回chatMessageList（messageCount=0），但session的lastMessage可能已被服务端更新。
+            // 这种情况在网络快速断开重连时发生：服务端lastOffTime被更新，导致消息查询条件过于严格，返回0条消息。
+            // 但session是独立查询的，lastMessage已被更新到最新。
+            // 这会导致 session列表显示正确的最新消息，但chat_message表中没有对应记录——进入聊天页面少了一个气泡。
+            // 修复方案：验证每个session的lastReceiveTime是否与本地chat_message数据一致，
+            // 如果不一致（session有更新的lastMessage但本地没有对应消息实体），回退session的lastMessage到本地数据。
+            Log.w("DBG-MISS-INIT", "INIT messageCount=0 but sessions exist, checking for gaps...");
+            for (WsInitData.ChatSessionUser session : sessionList) {
+                try {
+                    ChatMessageEntity latestLocal = db.chatMessageDao().getLastMessage(session.getSessionId());
+                    if (latestLocal != null && latestLocal.getSendTime() != null && session.getLastReceiveTime() != null
+                            && session.getLastReceiveTime() > latestLocal.getSendTime()) {
+                        // 检测到缺口：服务端session比本地最新消息更新
+                        Log.w("DBG-MISS-INIT", "GAP detected for session=" + session.getSessionId()
+                                + " | server.lastMsg=" + session.getLastMessage()
+                                + " | server.lastTime=" + session.getLastReceiveTime()
+                                + " | local.lastContent=" + latestLocal.getMessageContent()
+                                + " | local.lastTime=" + latestLocal.getSendTime()
+                                + " | reverting session lastMessage to local data");
+                        db.chatSessionDao().updateLastMsg(
+                                session.getSessionId(),
+                                latestLocal.getMessageContent(),
+                                latestLocal.getSendTime());
+                    }
+                } catch (Exception e) {
+                    Log.e("DBG-MISS-INIT", "gap check failed for session=" + session.getSessionId(), e);
+                }
             }
         }
     }
+    // #endregion
 
+    // #region debug-point persist-chat
     private void persistChatMessage(MessageSendDto<?> base) {
         AppDatabase db = AppDatabase.getInstance(this);
+        Long remoteMsgId = base.getMessageId();
+        String rawSessionId = base.getSessionId();
+        String rawContactId = base.getContactId();
+
+        Log.d("DBG-MISS-PERSIST", "enter | messageId=" + remoteMsgId + " | rawSessionId=" + rawSessionId + " | contactId=" + rawContactId + " | content=" + base.getMessageContent() + " | sendTime=" + base.getSendTime() + " | status=" + base.getStatus() + " | lastMessage=" + base.getLastMessage());
 
         if (base.getMessageId() != null) {
             ChatMessageEntity existed = db.chatMessageDao().getMessageByRemoteId(base.getMessageId());
             if (existed != null) {
                 boolean changed = false;
+                Log.d("DBG-MISS-PERSIST", "DUPLICATE | localId=" + existed.getLocalId() + " | existingSessionId=" + existed.getSessionId() + " | existingSendTime=" + existed.getSendTime() + " | existingStatus=" + existed.getStatus());
                 if (base.getStatus() != null && !base.getStatus().equals(existed.getStatus())) {
                     existed.setStatus(base.getStatus());
                     changed = true;
@@ -420,8 +499,10 @@ public class WebSocketService extends Service {
                     changed = true;
                 }
                 if (changed) {
+                    Log.d("DBG-MISS-PERSIST", "DUPLICATE updated | changed=" + changed);
                     db.chatMessageDao().insertOrReplace(existed);
                 }
+                Log.d("DBG-MISS-PERSIST", "exit DUPLICATE | return without session update");
                 return;
             }
         }
@@ -437,6 +518,7 @@ public class WebSocketService extends Service {
                 sessionId = ChatSessionIdUtils.getChatSessionId4User(myUserId, contactId);
             }
         }
+        Log.d("DBG-MISS-PERSIST", "resolved sessionId=" + sessionId + " | myUserId=" + myUserId);
 
         ChatSessionEntity session = db.chatSessionDao().getSessionById(sessionId);
         if (session == null) {
@@ -450,6 +532,7 @@ public class WebSocketService extends Service {
             }
             session.setContactType(ct);
             db.chatSessionDao().insertOrReplace(session);
+            Log.d("DBG-MISS-PERSIST", "created new session: " + sessionId);
         }
 
         ChatMessageEntity entity = new ChatMessageEntity();
@@ -470,17 +553,20 @@ public class WebSocketService extends Service {
         entity.setFileName(base.getFileName());
         entity.setFileType(base.getFileType());
         entity.setStatus(base.getStatus() != null ? base.getStatus() : 1);
+        Log.d("DBG-MISS-PERSIST", "SAVING | localId=" + entity.getLocalId() + " | sessionId=" + entity.getSessionId() + " | sendTime=" + entity.getSendTime() + " | clientOrderTime=" + entity.getClientOrderTime());
         db.chatMessageDao().insertOrReplace(entity);
 
         String lastMsg = base.getLastMessage() != null ? base.getLastMessage() : base.getMessageContent();
         Long time = base.getSendTime() != null ? base.getSendTime() : System.currentTimeMillis();
-        String active = ChatActivity.getActiveSessionId();
-        if (active != null && active.equals(sessionId)) {
+        Log.d("DBG-MISS-PERSIST", "updateSession | sessionId=" + sessionId + " | lastMsg=" + lastMsg + " | time=" + time + " | isActive=" + ChatActivity.isSessionActive(sessionId));
+        if (ChatActivity.isSessionActive(sessionId)) {
             db.chatSessionDao().updateLastMsg(sessionId, lastMsg, time);
         } else {
             db.chatSessionDao().updateUnreadAndLastMsg(sessionId, lastMsg, time);
         }
+        Log.d("DBG-MISS-PERSIST", "exit SAVED");
     }
+    // #endregion
 
     // 调度重连（指数退避策略）
     private void scheduleReconnect() {
@@ -600,6 +686,11 @@ public class WebSocketService extends Service {
         isManualStop = true; // 极其重要：防止异步的 onClose 再次拉起服务
         if (connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
+        try {
+            unregisterReceiver(screenOnReceiver);
+        } catch (Exception e) {
+            // ignore
         }
         mainHandler.removeCallbacks(reconnectRunnable); // P0-1: 先移除任务
         webSocketManager.close(); // 再关闭连接

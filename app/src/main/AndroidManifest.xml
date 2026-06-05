@@ -71,6 +71,8 @@
             android:exported="false" />
         <activity android:name=".chat.GroupMemberListActivity"
             android:exported="false" />
+        <activity android:name=".chat.ChangePasswordActivity" />
+        <activity android:name=".chat.MomentPublishActivity" />
         <activity android:name=".chat.InviteFriendActivity"
             android:exported="false" />
         <activity android:name=".chat.ChatActivity"

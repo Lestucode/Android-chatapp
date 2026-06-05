@@ -18,7 +18,7 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="64dp"
+        android:layout_marginEnd="8dp"
         app:cardCornerRadius="16dp"
         app:cardElevation="1dp"
         app:cardBackgroundColor="@android:color/white"
@@ -101,4 +101,17 @@
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <ImageView
+        android:id="@+id/ivDownload"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="32dp"
+        android:layout_gravity="center_vertical"
+        android:src="@android:drawable/stat_sys_download"
+        android:visibility="gone"
+        app:tint="?attr/colorPrimary"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"/>
 </LinearLayout>

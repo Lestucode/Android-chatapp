@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -49,6 +50,8 @@ import com.example.chatapp.util.AppExecutors;
 
 public class ChatActivity extends AppCompatActivity {
     private static final String TAG = "ChatActivity";
+    private static final int HISTORY_PAGE_SIZE = 20;
+
     private Toolbar toolbar;
     private RecyclerView rvMessages;
     private EditText etMessage;
@@ -78,7 +81,15 @@ public class ChatActivity extends AppCompatActivity {
     
     private String sessionId;
 
-    private static volatile String activeSessionId;
+    /** 线程安全的活跃会话集合（替代 volatile 单字段，支持多会话场景） */
+    private static final java.util.Set<String> activeSessionIds = java.util.Collections.synchronizedSet(new java.util.HashSet<String>());
+
+    /** 是否正在加载历史消息，防止重复请求 */
+    private boolean isLoadingHistory = false;
+    /** 是否还有更多历史消息可加载 */
+    private boolean hasMoreHistory = true;
+    /** 当前已加载的最早消息 ID（用于分页） */
+    private Long oldestMessageId = null;
     
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -112,6 +123,11 @@ public class ChatActivity extends AppCompatActivity {
         if (sessionId != null) {
             AppDatabase.getInstance(this).chatMessageDao().getMessagesBySessionId(sessionId).observe(this, messages -> {
                 if (messages != null) {
+                    Log.d("DBG-MISS-QUERY", "onCreate query | sessionId=" + sessionId + " | count=" + messages.size());
+                    if (messages.size() > 0) {
+                        ChatMessageEntity last = messages.get(messages.size() - 1);
+                        Log.d("DBG-MISS-QUERY", "last msg | localId=" + last.getLocalId() + " | messageId=" + last.getMessageId() + " | sendTime=" + last.getSendTime() + " | clientOrderTime=" + last.getClientOrderTime() + " | content=" + last.getMessageContent());
+                    }
                     adapter.submitList(messages, () -> {
                         if (adapter.getItemCount() > 0) {
                             rvMessages.scrollToPosition(adapter.getItemCount() - 1);
@@ -189,6 +205,21 @@ public class ChatActivity extends AppCompatActivity {
         layoutManager.setStackFromEnd(true);
         rvMessages.setLayoutManager(layoutManager);
         rvMessages.setAdapter(adapter);
+
+        // 监听滚动到顶部，触发加载历史消息
+        rvMessages.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                // 向上滚动（dy < 0）且到达顶部时加载更多
+                if (dy < 0 && !isLoadingHistory && hasMoreHistory) {
+                    int firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition();
+                    if (firstVisibleItemPosition <= 2) {
+                        loadMoreHistory();
+                    }
+                }
+            }
+        });
 
         btnSend.setOnClickListener(v -> sendMessage());
         
@@ -507,7 +538,6 @@ public class ChatActivity extends AppCompatActivity {
                     
                     Map<String, File> files = new HashMap<>();
                     files.put("file", file);
-                    files.put("cover", file);
                     
                     Type uploadType = new TypeToken<Result<Object>>(){}.getType();
                     HttpClient.uploadFiles("/chat/uploadFile", uploadParams, files, token, uploadType, uploadResult -> {
@@ -539,19 +569,129 @@ public class ChatActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        activeSessionId = sessionId;
+        if (sessionId != null) {
+            activeSessionIds.add(sessionId);
+        }
     }
 
     @Override
     protected void onPause() {
-        if (sessionId != null && sessionId.equals(activeSessionId)) {
-            activeSessionId = null;
+        if (sessionId != null) {
+            activeSessionIds.remove(sessionId);
         }
         super.onPause();
     }
 
-    public static String getActiveSessionId() {
-        return activeSessionId;
+    /**
+     * 判断指定 session 是否为当前用户正在查看的活跃会话
+     */
+    public static boolean isSessionActive(String sessionId) {
+        return sessionId != null && activeSessionIds.contains(sessionId);
+    }
+
+    /**
+     * 加载更多历史消息（懒加载分页）
+     */
+    private void loadMoreHistory() {
+        if (isLoadingHistory || !hasMoreHistory || sessionId == null) return;
+        isLoadingHistory = true;
+
+        // 先查本地 Room 中最旧的消息 ID
+        AppExecutors.io().execute(() -> {
+            AppDatabase db = AppDatabase.getInstance(this);
+            ChatMessageEntity earliest = db.chatMessageDao().getEarliestMessage(sessionId);
+            final Long lastMsgId = (earliest != null && earliest.getMessageId() != null && earliest.getMessageId() > 0)
+                    ? earliest.getMessageId() : null;
+
+            // 构造请求参数
+            java.util.Map<String, Object> params = new java.util.HashMap<>();
+            params.put("sessionId", sessionId);
+            if (lastMsgId != null) {
+                params.put("lastMessageId", lastMsgId);
+            }
+            params.put("pageSize", HISTORY_PAGE_SIZE);
+
+            java.lang.reflect.Type type = new com.google.gson.reflect.TypeToken<com.example.chatapp.chat.AddFriendRequest.Result<Map<String, Object>>>(){}.getType();
+            com.example.chatapp.chat.AddFriendRequest.HttpClient.get(
+                    "/chat/loadHistory?sessionId=" + sessionId
+                            + (lastMsgId != null ? "&lastMessageId=" + lastMsgId : "")
+                            + "&pageSize=" + HISTORY_PAGE_SIZE,
+                    type, token, result -> {
+                        if (result != null && "success".equals(result.getStatus())) {
+                            Map<String, Object> data = result.getDataAs(Map.class);
+                            if (data != null) {
+                                Object listObj = data.get("list");
+                                if (listObj instanceof java.util.List) {
+                                    java.util.List<Map<String, Object>> rawList = (java.util.List<Map<String, Object>>) listObj;
+                                    if (rawList.isEmpty()) {
+                                        hasMoreHistory = false;
+                                        isLoadingHistory = false;
+                                        return;
+                                    }
+                                    // 将后端返回的消息转换为本地实体并保存
+                                    AppExecutors.io().execute(() -> {
+                                        try {
+                                            com.google.gson.Gson gson = new com.google.gson.Gson();
+                                            String jsonStr = gson.toJson(rawList);
+                                            java.lang.reflect.Type listType = new com.google.gson.reflect.TypeToken<java.util.List<ChatMessageEntity>>(){}.getType();
+                                            // 手动解析，因为字段名不同
+                                            java.util.List<ChatMessageEntity> entities = new java.util.ArrayList<>();
+                                            for (Map<String, Object> item : rawList) {
+                                                ChatMessageEntity entity = new ChatMessageEntity();
+                                                Object mid = item.get("messageId");
+                                                if (mid instanceof Number) {
+                                                    long msgId = ((Number) mid).longValue();
+                                                    entity.setMessageId(msgId);
+                                                    entity.setLocalId("remote_" + msgId);
+                                                }
+                                                entity.setSessionId((String) item.get("sessionId"));
+                                                entity.setMessageType(item.get("messageType") instanceof Number ? ((Number) item.get("messageType")).intValue() : null);
+                                                entity.setMessageContent((String) item.get("messageContent"));
+                                                entity.setSendUserId((String) item.get("sendUserId"));
+                                                entity.setSendUserNickName((String) item.get("sendUserNickName"));
+                                                if (item.get("sendTime") instanceof Number) {
+                                                    entity.setSendTime(((Number) item.get("sendTime")).longValue());
+                                                }
+                                                entity.setContactId((String) item.get("contactId"));
+                                                if (item.get("contactType") instanceof Number) {
+                                                    entity.setContactType(((Number) item.get("contactType")).intValue());
+                                                }
+                                                if (item.get("fileSize") instanceof Number) {
+                                                    entity.setFileSize(((Number) item.get("fileSize")).longValue());
+                                                }
+                                                entity.setFileName((String) item.get("fileName"));
+                                                if (item.get("fileType") instanceof Number) {
+                                                    entity.setFileType(((Number) item.get("fileType")).intValue());
+                                                }
+                                                entity.setStatus(1);
+                                                entity.setClientOrderTime(0L);
+
+                                                // 去重：跳过本地已存在的消息
+                                                if (entity.getMessageId() != null && entity.getMessageId() > 0) {
+                                                    ChatMessageEntity existed = db.chatMessageDao().getMessageByRemoteId(entity.getMessageId());
+                                                    if (existed != null) continue;
+                                                }
+                                                entities.add(entity);
+                                            }
+                                            if (!entities.isEmpty()) {
+                                                db.chatMessageDao().insertOrReplaceList(entities);
+                                            } else {
+                                                hasMoreHistory = false;
+                                            }
+                                        } catch (Exception e) {
+                                            Log.e(TAG, "加载历史消息解析失败", e);
+                                        } finally {
+                                            isLoadingHistory = false;
+                                        }
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+                        isLoadingHistory = false;
+                    }
+            );
+        });
     }
 
     @Override

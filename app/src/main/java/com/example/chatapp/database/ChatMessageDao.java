@@ -29,7 +29,9 @@ public interface ChatMessageDao {
     @Query("SELECT * FROM chat_message WHERE session_id = :sessionId ORDER BY send_time DESC LIMIT 1")
     ChatMessageEntity getLastMessage(String sessionId);
 
-    // 删除单个会话的所有消息
+    @Query("SELECT * FROM chat_message WHERE session_id = :sessionId AND send_time > 0 ORDER BY send_time ASC LIMIT 1")
+    ChatMessageEntity getEarliestMessage(String sessionId);
+
     @Query("DELETE FROM chat_message WHERE session_id = :sessionId")
     void deleteMessagesBySessionId(String sessionId);
 

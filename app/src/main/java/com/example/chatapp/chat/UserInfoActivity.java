@@ -1,5 +1,6 @@
 package com.example.chatapp.chat;
 
+import android.app.AlertDialog;
 import android.os.Bundle;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,9 +18,11 @@ import com.example.chatapp.UserDao;
 import com.example.chatapp.chat.AddFriendRequest.HttpClient;
 import com.example.chatapp.chat.AddFriendRequest.Result;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 public class UserInfoActivity extends AppCompatActivity {
@@ -36,7 +39,40 @@ public class UserInfoActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.user_info_toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        MaterialButton btnDeleteFriend = findViewById(R.id.btnDeleteFriend);
+        btnDeleteFriend.setOnClickListener(v -> showDeleteConfirmDialog());
+
         loadUserInfo();
+    }
+
+    private void showDeleteConfirmDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("删除好友")
+                .setMessage("确定要删除该好友吗？删除后双方不再是好友关系。")
+                .setPositiveButton("确认删除", (dialog, which) -> deleteFriend())
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private void deleteFriend() {
+        User user = UserDao.getInstance().getUser();
+        if (user == null || user.getToken() == null) return;
+
+        Type type = new TypeToken<Result<Void>>(){}.getType();
+        Map<String, Object> params = new HashMap<>();
+        params.put("contactId", targetUserId);
+
+        HttpClient.post("/contact/delContact", params, user.getToken(), type, result -> {
+            if (result != null && "success".equals(result.getStatus())) {
+                runOnUiThread(() -> {
+                    Toast.makeText(UserInfoActivity.this, "已删除好友", Toast.LENGTH_SHORT).show();
+                    finish();
+                });
+            } else {
+                String errorMsg = result != null ? result.getInfo() : "操作失败";
+                runOnUiThread(() -> Toast.makeText(UserInfoActivity.this, errorMsg, Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 
     private void loadUserInfo() {

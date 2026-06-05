@@ -26,7 +26,11 @@
                 android:title="创建群聊"
                 android:checkable="true"
                 app:showAsAction="ifRoom"/>
-
+            <item
+                android:id="@+id/changePassword_item"
+                android:title="修改密码"
+                android:checkable="true"
+                app:showAsAction="ifRoom"/>
 
         </menu>
     </item>

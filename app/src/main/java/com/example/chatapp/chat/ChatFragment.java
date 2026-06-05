@@ -18,19 +18,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager; // 确保导入
 
 import com.example.chatapp.R;
-import com.example.chatapp.chat.ConversationItem; // 确保导入
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.example.chatapp.MainActivity;
-import com.example.chatapp.UserDao;
+import com.example.chatapp.MyApplication;
 import com.example.chatapp.WebSocketService;
 import com.example.chatapp.data.MessageSendDto;
 import com.google.gson.Gson;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 import com.example.chatapp.database.AppDatabase;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -41,7 +33,6 @@ public class ChatFragment extends Fragment {
     private static final String TAG = "ChatFragment";
 
     private RecyclerView rvConversations;
-    private List<ConversationItem> conversationsList;
 
     private Gson gson = new Gson();
 
@@ -63,17 +54,8 @@ public class ChatFragment extends Fragment {
                     switch (mt) {
                         case 7: { // FORCE_OFF_LINE
                             Log.w(TAG, "收到强制下线通知");
-                            UserDao.getInstance().clearUser();
-                            Context ctx = getContext();
-                            if (ctx != null) {
-                                ctx.stopService(new Intent(ctx, WebSocketService.class));
-                                Intent login = new Intent(ctx, MainActivity.class)
-                                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                startActivity(login);
-                            }
-                            if (getActivity() != null) {
-                                getActivity().finish();
-                            }
+                            // 使用 Application 的统一清理逻辑（含 Room 清理）
+                            MyApplication.getInstance().handleForceOffline();
                             break;
                         }
                         default:
@@ -86,7 +68,6 @@ public class ChatFragment extends Fragment {
             } else if (WebSocketService.ACTION_WS_STATUS.equals(action)) {
                 String status = intent.getStringExtra(WebSocketService.EXTRA_STATUS);
                 Log.d(TAG, "WebSocket 状态更新: " + status);
-                // TODO: 可以在 UI 上方显示连接状态，比如 "正在重连..."
             }
         }
     };

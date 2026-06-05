@@ -10,6 +10,12 @@ import org.java_websocket.handshake.ServerHandshake;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.security.cert.X509Certificate;
+import java.security.SecureRandom;
+
 public class WebSocketManager {
     private static final String TAG = "WebSocketManager";
     private static WebSocketManager instance;
@@ -21,7 +27,7 @@ public class WebSocketManager {
     private WebSocketListener listener;
 
     // 心跳机制
-    private static final long HEARTBEAT_INTERVAL = 25000; // 25秒 (小于后端60秒限制)
+    private static final long HEARTBEAT_INTERVAL = 15000; // 15秒 (小于后端30秒限制)
     
     private Handler heartbeatHandler = new Handler(Looper.getMainLooper());
     private Runnable heartbeatRunnable = new Runnable() {
@@ -124,6 +130,27 @@ public class WebSocketManager {
 
             // 设置底层的 Ping/Pong 掉线检测时间为 30 秒
             client.setConnectionLostTimeout(30);
+
+            if ("wss".equals(new URI(wsUrl).getScheme())) {
+                try {
+                    TrustManager[] trustAllCerts = new TrustManager[]{
+                        new X509TrustManager() {
+                            @Override
+                            public void checkClientTrusted(X509Certificate[] chain, String authType) {}
+                            @Override
+                            public void checkServerTrusted(X509Certificate[] chain, String authType) {}
+                            @Override
+                            public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
+                        }
+                    };
+                    SSLContext sslContext = SSLContext.getInstance("TLS");
+                    sslContext.init(null, trustAllCerts, new SecureRandom());
+                    client.setSocketFactory(sslContext.getSocketFactory());
+                } catch (Exception e) {
+                    Log.e(TAG, "SSL 信任设置失败", e);
+                }
+            }
+
             client.connect();
 
         } catch (URISyntaxException e) {

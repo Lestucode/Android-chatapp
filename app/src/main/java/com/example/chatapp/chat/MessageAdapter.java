@@ -80,7 +80,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
         
         TextView tvMessage;
         View flMedia, llFile;
-        ImageView ivMedia, ivPlay;
+        ImageView ivMedia, ivPlay, ivDownload;
         TextView tvFileName, tvFileSize;
         
         if (holder instanceof MeViewHolder) {
@@ -90,6 +90,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             llFile = meHolder.llFile;
             ivMedia = meHolder.ivMedia;
             ivPlay = meHolder.ivPlay;
+            ivDownload = meHolder.ivDownload;
             tvFileName = meHolder.tvFileName;
             tvFileSize = meHolder.tvFileSize;
         } else {
@@ -99,6 +100,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             llFile = otherHolder.llFile;
             ivMedia = otherHolder.ivMedia;
             ivPlay = otherHolder.ivPlay;
+            ivDownload = otherHolder.ivDownload;
             tvFileName = otherHolder.tvFileName;
             tvFileSize = otherHolder.tvFileSize;
             
@@ -127,6 +129,9 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
         flMedia.setVisibility(View.GONE);
         llFile.setVisibility(View.GONE);
         ivPlay.setVisibility(View.GONE);
+        if (ivDownload != null) {
+            ivDownload.setVisibility(View.GONE);
+        }
         
         if (msg.getMessageType() != null && msg.getMessageType() == 5) {
             if (msg.getFileType() != null && msg.getFileType() == 2) {
@@ -134,6 +139,8 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                 llFile.setVisibility(View.VISIBLE);
                 tvFileName.setText(msg.getFileName() != null ? msg.getFileName() : "未知文件");
                 tvFileSize.setText(formatFileSize(msg.getFileSize()));
+                
+                setupDownloadButton(ivDownload, msg, context);
             } else {
                 // MEDIA_CHAT (Image/Video)
                 flMedia.setVisibility(View.VISIBLE);
@@ -161,6 +168,8 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                         .into(ivMedia);
                 }
                 
+                setupDownloadButton(ivDownload, msg, context);
+                
                 String finalMediaUrl = mediaUrl;
                 flMedia.setOnClickListener(v -> {
                     if (finalMediaUrl.isEmpty()) return;
@@ -187,6 +196,8 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             tvFileName.setText(msg.getFileName() != null ? msg.getFileName() : "未知文件");
             tvFileSize.setText(formatFileSize(msg.getFileSize()));
             
+            setupDownloadButton(ivDownload, msg, context);
+            
             llFile.setOnClickListener(v -> {
                 String fileUrl = "";
                 Uri uri = null;
@@ -204,38 +215,34 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
                     context.startActivity(Intent.createChooser(intent, "选择应用打开文件"));
                 }
             });
-            
-            llFile.setOnLongClickListener(v -> {
-                String fileUrl = "";
-                if (msg.getMessageContent() != null && msg.getMessageContent().startsWith("/")) {
-                    android.widget.Toast.makeText(context, "文件已在本地: " + msg.getMessageContent(), android.widget.Toast.LENGTH_SHORT).show();
-                    return true;
-                } else if (msg.getMessageId() != null && msg.getStatus() != null && msg.getStatus() == 1) {
-                    fileUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getMessageId() + "&showCover=false";
-                }
-                
-                if (!fileUrl.isEmpty()) {
-                    android.app.DownloadManager.Request request = new android.app.DownloadManager.Request(Uri.parse(fileUrl));
-                    if (token != null && !token.isEmpty()) {
-                        request.addRequestHeader("token", token);
-                    }
-                    request.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-                    String dlName = msg.getFileName() != null ? msg.getFileName() : "downloaded_file";
-                    request.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, dlName);
-                    request.setTitle("下载文件");
-                    
-                    android.app.DownloadManager dm = (android.app.DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
-                    if (dm != null) {
-                        dm.enqueue(request);
-                        android.widget.Toast.makeText(context, "开始下载...", android.widget.Toast.LENGTH_SHORT).show();
-                    }
-                }
-                return true;
-            });
         } else {
             // CHAT
             tvMessage.setVisibility(View.VISIBLE);
             tvMessage.setText(msg.getMessageContent());
+        }
+    }
+    
+    private void setupDownloadButton(ImageView ivDownload, ChatMessageEntity msg, Context context) {
+        if (ivDownload == null) return;
+        
+        boolean isLocal = msg.getMessageContent() != null && msg.getMessageContent().startsWith("/");
+        if (isLocal) {
+            ivDownload.setVisibility(View.GONE);
+        } else {
+            ivDownload.setVisibility(View.VISIBLE);
+            ivDownload.setOnClickListener(v -> {
+                String fileUrl = "";
+                if (msg.getMessageId() != null && msg.getStatus() != null && msg.getStatus() == 1) {
+                    fileUrl = com.example.chatapp.AppConfig.FILE_BASE_URL + msg.getMessageId() + "&showCover=false";
+                }
+                if (!fileUrl.isEmpty()) {
+                    String dlName = msg.getFileName();
+                    if (dlName == null) {
+                        dlName = "media_" + System.currentTimeMillis() + (msg.getFileType() != null && msg.getFileType() == 1 ? ".mp4" : ".jpg");
+                    }
+                    com.example.chatapp.util.ChatFileDownloader.download(context, fileUrl, dlName, token, null);
+                }
+            });
         }
     }
     
@@ -249,7 +256,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
     static class MeViewHolder extends RecyclerView.ViewHolder {
         TextView tvMessage;
         View flMedia, llFile;
-        ImageView ivMedia, ivPlay;
+        ImageView ivMedia, ivPlay, ivDownload;
         TextView tvFileName, tvFileSize;
 
         MeViewHolder(View itemView) {
@@ -259,6 +266,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             llFile = itemView.findViewById(R.id.llFile);
             ivMedia = itemView.findViewById(R.id.ivMedia);
             ivPlay = itemView.findViewById(R.id.ivPlay);
+            ivDownload = itemView.findViewById(R.id.ivDownload);
             tvFileName = itemView.findViewById(R.id.tvFileName);
             tvFileSize = itemView.findViewById(R.id.tvFileSize);
         }
@@ -268,7 +276,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
         TextView tvMessage;
         ImageView ivAvatar;
         View flMedia, llFile;
-        ImageView ivMedia, ivPlay;
+        ImageView ivMedia, ivPlay, ivDownload;
         TextView tvFileName, tvFileSize;
 
         OtherViewHolder(View itemView) {
@@ -279,6 +287,7 @@ public class MessageAdapter extends ListAdapter<ChatMessageEntity, RecyclerView.
             llFile = itemView.findViewById(R.id.llFile);
             ivMedia = itemView.findViewById(R.id.ivMedia);
             ivPlay = itemView.findViewById(R.id.ivPlay);
+            ivDownload = itemView.findViewById(R.id.ivDownload);
             tvFileName = itemView.findViewById(R.id.tvFileName);
             tvFileSize = itemView.findViewById(R.id.tvFileSize);
         }

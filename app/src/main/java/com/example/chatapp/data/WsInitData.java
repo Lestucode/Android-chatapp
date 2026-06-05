@@ -38,6 +38,7 @@ public class WsInitData {
         private String lastMessage;
         private Long lastReceiveTime;
         private Integer memberCount;
+        private Integer contactType;
 
         public String getSessionId() {
             return sessionId;
@@ -85,6 +86,14 @@ public class WsInitData {
 
         public void setMemberCount(Integer memberCount) {
             this.memberCount = memberCount;
+        }
+
+        public Integer getContactType() {
+            return contactType;
+        }
+
+        public void setContactType(Integer contactType) {
+            this.contactType = contactType;
         }
     }
 
